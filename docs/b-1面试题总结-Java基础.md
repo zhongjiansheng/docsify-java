@@ -107,3 +107,108 @@ hashCode 用来获得对象的哈希码，如果不进行重写的话则默认�
 ### 2.1.11 java 中方法的传递是值传递还是引用传递？
 
 都是值传递。当为基本类型的时候值传递传递的是基本类型的值副本，所以不会影响原始值。同样，当传递引用对象的时候，传递的是引用对象的地址，会对原始对象进行改变。
+
+### 2.1.12 抽象和接口的异同
+
+* **能否实例化：**都不能实例化
+* **内部方法：**抽象的方法可以有具体实现，而接口的方法不能有实现方式
+* **权限修饰符：**抽象的成员可以是任何修饰符，而接口的只能是 public
+* **实现方式：**抽象是继承，如果不全部实现则还是抽象类，接口则是实现，并且必须全部实现
+
+### 2.1.13 静态方法和实例方法中对于外部的调用区别？
+
+**静态方法**：不依赖于实例对象，所以可以直接调用静态变量和方法，但是调用实例方法的时候需要先实例化。
+
+**实例方法：**可以调用任何变量和方法。
+
+![image-20200617094849335](b-1面试题总结-Java基础.assets/image-20200617094849335.png)
+
+### 2.1.14 请分析以下代码是否有问题？
+
+```java
+public class Stack {
+    private Object[] elements;
+    private int size = 0;
+    private static final int DEFAULT_INITIAL_CAPACITY = 1;
+
+    public Stack() {
+        elements = new Object[DEFAULT_INITIAL_CAPACITY];
+    }
+
+    public void push(Object e) {
+        ensureCapacity();
+        elements[size++] = e;
+    }
+
+    public Object pop() {
+        if(size == 0)
+            throw new EmptyStackException();
+        return elements[--size];
+    }
+
+    /*
+     * 该方法用于判断数组空间中是否至少有一个空余空间，如果没有就对数组进行扩容
+     * */
+    private void ensureCapacity() {
+        if(elements.length == size)
+            elements = Arrays.copyOf(elements, 2 * size + 1);
+    }
+}
+```
+
+该代码初看是没有任何问题， 但随着垃圾回收器的活动增加，性能会逐渐降低，原因就是存在内存泄漏。那么内存是怎么泄露的呐？当我们执行 pop 方法的时候返回的是数组的一个值，但是数组仍然保持着对该值的引用，并且我们不会再使用这个引用。
+
+为了避免内存泄漏该代码中的 pop 方法应该这样修改
+
+```java
+public Object pop() {
+    if(size == 0)
+        throw new EmptyStackException();
+    Object result = elements[--size];
+    elements[size] = null;
+    return result;	
+}
+```
+
+### 2.1.15 String s = new String(“xyz”)创建了几个字符串对象？
+
+标准答案是分情况讨论：
+
+1. 如果字符串常量池有*xyz*，则只在堆上创建一个*String 对象*。
+2. 如果字符串常量没有该值，则在常量池创建一个*xyz*，然后再堆上创建一个*String 对象*。
+
+### 2.1.16 匿名内部类是否可以继承其他类？是否可以实现接口？
+
+都可以。内部类分为静态内部类、成员内部类、方法内部类以及匿名内部类
+
+**.this 和 .new**
+
+当需要在内部类中创建外部类的时候，通过*类名.this* 的方法来返回
+
+当需要对内部类进行实例化的时候则是`OutClass.InerClass obj = outInstance.new InnerClass()`
+
+### 2.1.17 内部类引用外部类的限制
+
+如果 非静态内部类则没有任何限制，如果是静态内部类则只能引用静态成员。
+
+### 2.1.18 final关键词的用法有哪些？
+
+1. 用在类上表示类不能继承
+2. 用在方法上表示方法不能重写
+3. 用在基本类型上表示不能改变
+4. 用在数组或者引用对象上表示引用地址不能变
+
+### 2.1.19 try 和 final 的执行顺序
+
+finally 执行顺序是在方法返回调用者前执行，但是如果在 finally 中有改变返回值的行为，那么 finally 对其的影响分为两种情况：
+
+**a、对于基本类型或常量(如String) finally里即使修改了，也不会影响返回结果。**
+
+**b、如果是对象类型，finally里修改了对象 是影响返回结果的。（因为复杂对象传递的是指针 指针指向的内存区域是一样的。）**
+
+### 2.1.20 线程的 sleep 方法和 yield 方法有什么区别？
+
+1. sleep 方法给其他线程运行机会时不考虑线程的优先级，而 yield 只会给相同优先级或者更高优先级的线程以运行的机会
+2. 线程执行 sleep 方法后转入阻塞状态，而执行 yield 方法后转入就绪状态
+3. sleep 方法抛出 InterruptedException，而 yield 方法没有声明任何异常
+4. sleep 方法比 yield 方法具有更好的可移植性
